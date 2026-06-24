@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Змейка</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: #fff;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: 8px;
+      color: #00ff88;
+      text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    #scoreboard {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      color: #aaa;
+    }
+    #scoreboard span { color: #00ff88; font-size: 1.3rem; font-weight: bold; }
+
+    #main-layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    #game-wrapper { position: relative; }
+
+    canvas {
+      display: block;
+      border: 2px solid #00ff8844;
+      box-shadow: 0 0 30px #00ff8822, inset 0 0 30px #00000066;
+      border-radius: 4px;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0fcc;
+      border-radius: 4px;
+      padding: 20px;
+    }
+
+    #overlay h2 {
+      font-size: 1.8rem;
+      color: #00ff88;
+      text-shadow: 0 0 20px #00ff88;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+    }
+
+    #overlay p {
+      color: #aaa;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    #overlay .final-score {
+      font-size: 2.2rem;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    /* имя игрока */
+    #name-block {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      width: 100%;
+    }
+    #name-block label { color: #aaa; font-size: 0.85rem; letter-spacing: 2px; }
+    #player-name {
+      background: transparent;
+      border: 1px solid #00ff8866;
+      color: #00ff88;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      padding: 8px 14px;
+      text-align: center;
+      letter-spacing: 2px;
+      outline: none;
+      width: 200px;
+      border-radius: 2px;
+    }
+    #player-name:focus { border-color: #00ff88; box-shadow: 0 0 10px #00ff8844; }
+
+    button {
+      background: transparent;
+      border: 2px solid #00ff88;
+      color: #00ff88;
+      padding: 12px 36px;
+      font-size: 1rem;
+      letter-spacing: 3px;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      border-radius: 2px;
+    }
+    button:hover {
+      background: #00ff88;
+      color: #0a0a0f;
+      box-shadow: 0 0 20px #00ff88;
+    }
+
+    /* таблица рекордов */
+    #leaderboard {
+      width: 220px;
+      border: 2px solid #00ff8833;
+      border-radius: 4px;
+      padding: 16px;
+      background: #0d0d14;
+    }
+    #leaderboard h3 {
+      color: #00ff88;
+      letter-spacing: 3px;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-bottom: 14px;
+      text-shadow: 0 0 10px #00ff88;
+    }
+    .lb-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+      border-bottom: 1px solid #ffffff08;
+      font-size: 0.82rem;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { color: #555; width: 22px; }
+    .lb-rank.gold   { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
+    .lb-rank.silver { color: #c0c0c0; }
+    .lb-rank.bronze { color: #cd7f32; }
+    .lb-name { color: #ccc; flex: 1; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { color: #00ff88; font-weight: bold; }
+    .lb-empty { color: #333; font-size: 0.8rem; text-align: center; padding: 20px 0; letter-spacing: 1px; }
+
+    #lb-clear {
+      margin-top: 12px;
+      width: 100%;
+      padding: 6px;
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      border-color: #ff446644;
+      color: #ff4466;
+    }
+    #lb-clear:hover { background: #ff4466; color: #0a0a0f; box-shadow: 0 0 10px #ff4466; }
+
+    #controls {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(2, 52px);
+      gap: 6px;
+    }
+    .ctrl-btn {
+      width: 52px; height: 52px; padding: 0;
+      font-size: 1.4rem; letter-spacing: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ctrl-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
+    .ctrl-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .ctrl-btn:nth-child(3) { grid-column: 2; grid-row: 2; }
+    .ctrl-btn:nth-child(4) { grid-column: 3; grid-row: 2; }
+
+    #hint { margin-top: 14px; color: #444; font-size: 0.78rem; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+<h1>Змейка</h1>
+
+<div id="scoreboard">
+  СЧЁТ: <span id="score">0</span>
+  &nbsp;&nbsp;РЕКОРД: <span id="best">0</span>
+</div>
+
+<div id="main-layout">
+  <div id="game-wrapper">
+    <canvas id="c" width="400" height="400"></canvas>
+
+    <div id="overlay">
+      <h2 id="ov-title">ЗМЕЙКА</h2>
+      <p id="ov-sub">Управление: стрелки или кнопки ниже</p>
+      <div id="ov-score" class="final-score" style="display:none"></div>
+
+      <div id="name-block">
+        <label for="player-name">ТВОЁ ИМЯ</label>
+        <input id="player-name" type="text" maxlength="12" placeholder="Игрок" autocomplete="off">
+      </div>
+
+      <button id="ov-btn">СТАРТ</button>
+    </div>
+  </div>
+
+  <!-- таблица рекордов -->
+  <div id="leaderboard">
+    <h3>🏆 РЕКОРДЫ</h3>
+    <div id="lb-list"><div class="lb-empty">Пока пусто</div></div>
+    <button id="lb-clear">ОЧИСТИТЬ</button>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="btn-up">▲</button>
+  <button class="ctrl-btn" id="btn-left">◀</button>
+  <button class="ctrl-btn" id="btn-down">▼</button>
+  <button class="ctrl-btn" id="btn-right">▶</button>
+</div>
+<p id="hint">← → ↑ ↓ или кнопки на экране</p>
+
+<script>
+  const canvas  = document.getElementById('c');
+  const ctx     = canvas.getContext('2d');
+  const COLS = 20, ROWS = 20;
+  const CELL = canvas.width / COLS;
+
+  let snake, dir, nextDir, food, score, best = 0, loop, running = false;
+
+  const overlay    = document.getElementById('overlay');
+  const ovTitle    = document.getElementById('ov-title');
+  const ovSub      = document.getElementById('ov-sub');
+  const ovScore    = document.getElementById('ov-score');
+  const ovBtn      = document.getElementById('ov-btn');
+  const nameBlock  = document.getElementById('name-block');
+  const nameInput  = document.getElementById('player-name');
+  const scoreEl    = document.getElementById('score');
+  const bestEl     = document.getElementById('best');
+
+  // ── Рекорды (localStorage) ──
+  const LS_KEY = 'snake_leaderboard';
+
+  function getRecords() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveRecord(name, pts) {
+    if (pts === 0) return;
+    const records = getRecords();
+    records.push({ name: name.trim() || 'Игрок', score: pts });
+    records.sort((a,b) => b.score - a.score);
+    records.splice(10); // топ-10
+    localStorage.setItem(LS_KEY, JSON.stringify(records));
+    renderLeaderboard();
+  }
+
+  function renderLeaderboard() {
+    const records = getRecords();
+    const list = document.getElementById('lb-list');
+    if (!records.length) {
+      list.innerHTML = '<div class="lb-empty">Пока пусто</div>';
+      return;
+    }
+    const medals = ['gold','silver','bronze'];
+    list.innerHTML = records.map((r,i) => `
+      <div class="lb-row">
+        <span class="lb-rank ${medals[i]||''}">${i+1}.</span>
+        <span class="lb-name">${escHtml(r.name)}</span>
+        <span class="lb-score">${r.score}</span>
+      </div>`).join('');
+
+    // обновить рекорд вверху
+    best = records[0].score;
+    bestEl.textContent = best;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  document.getElementById('lb-clear').onclick = () => {
+    if (confirm('Очистить таблицу рекордов?')) {
+      localStorage.removeItem(LS_KEY);
+      best = 0; bestEl.textContent = 0;
+      renderLeaderboard();
+    }
+  };
+
+  // ── Игра ──
+  function init() {
+    snake   = [{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+    dir     = {x:1,y:0};
+    nextDir = {x:1,y:0};
+    score   = 0;
+    scoreEl.textContent = 0;
+    placeFood();
+  }
+
+  function placeFood() {
+    let pos;
+    do {
+      pos = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+    } while (snake.some(s => s.x===pos.x && s.y===pos.y));
+    food = pos;
+  }
+
+  function step() {
+    dir = nextDir;
+    const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return gameOver();
+    if (snake.some(s => s.x===head.x && s.y===head.y)) return gameOver();
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      scoreEl.textContent = score;
+      placeFood();
+    } else {
+      snake.pop();
+    }
+    draw();
+  }
+
+  function draw() {
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#ffffff08';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= COLS; i++) {
+      ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,canvas.height); ctx.stroke();
+    }
+    for (let j = 0; j <= ROWS; j++) {
+      ctx.beginPath(); ctx.moveTo(0,j*CELL); ctx.lineTo(canvas.width,j*CELL); ctx.stroke();
+    }
+
+    const fx = food.x*CELL + CELL/2, fy = food.y*CELL + CELL/2;
+    ctx.beginPath();
+    ctx.arc(fx, fy, CELL/2-3, 0, Math.PI*2);
+    ctx.fillStyle = '#ff4466';
+    ctx.shadowColor = '#ff4466'; ctx.shadowBlur = 14;
+    ctx.fill(); ctx.shadowBlur = 0;
+
+    snake.forEach((s,i) => {
+      const alpha = 1 - (i/snake.length)*0.6;
+      ctx.fillStyle = i===0 ? `rgba(0,255,136,${alpha})` : `rgba(0,200,100,${alpha})`;
+      ctx.shadowColor = '#00ff88'; ctx.shadowBlur = i===0 ? 12 : 4;
+      ctx.fillRect(s.x*CELL+1, s.y*CELL+1, CELL-2, CELL-2);
+    });
+    ctx.shadowBlur = 0;
+  }
+
+  function startGame() {
+    overlay.style.display = 'none';
+    running = true;
+    init(); draw();
+    loop = setInterval(step, 120);
+  }
+
+  function gameOver() {
+    clearInterval(loop);
+    running = false;
+
+    const name = nameInput.value.trim() || 'Игрок';
+    saveRecord(name, score);
+
+    ovTitle.textContent = 'КОНЕЦ ИГРЫ';
+    ovSub.style.display = 'none';
+    ovScore.style.display = 'block';
+    ovScore.textContent = 'Счёт: ' + score;
+    nameBlock.style.display = 'flex';
+    ovBtn.textContent = 'ЕЩЁ РАЗ';
+    overlay.style.display = 'flex';
+  }
+
+  ovBtn.addEventListener('click', () => {
+    ovSub.style.display = 'none';
+    ovScore.style.display = 'none';
+    nameBlock.style.display = 'none';
+    startGame();
+  });
+
+  // при первом старте показать поле имени
+  nameBlock.style.display = 'flex';
+  ovSub.style.display = 'block';
+
+  document.addEventListener('keydown', e => {
+    if (!running) { if (e.key==='Enter') ovBtn.click(); return; }
+    const map = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0} };
+    const d = map[e.key];
+    if (!d) return;
+    if (d.x===-dir.x && d.y===-dir.y) return;
+    nextDir = d;
+    e.preventDefault();
+  });
+
+  document.getElementById('btn-up').onclick    = () => { if(dir.y!==1)  nextDir={x:0,y:-1}; };
+  document.getElementById('btn-down').onclick  = () => { if(dir.y!==-1) nextDir={x:0,y:1}; };
+  document.getElementById('btn-left').onclick  = () => { if(dir.x!==1)  nextDir={x:-1,y:0}; };
+  document.getElementById('btn-right').onclick = () => { if(dir.x!==-1) nextDir={x:1,y:0}; };
+
+  // инициализация таблицы
+  renderLeaderboard();
+</script>
+</body>
+</html>
